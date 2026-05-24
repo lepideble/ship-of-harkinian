@@ -573,10 +573,11 @@ typedef enum {
 
     // #### `result`
     // ```c
-    // true
+    // (this->heldItemAction == PLAYER_IA_HOOKSHOT) ||
+    // (this->heldItemAction == PLAYER_IA_LONGSHOT)
     // ```
     // #### `args`
-    // - None
+    // - '*Player'
     VB_DRAW_ADDITIONAL_RETICLES,
 
     // #### `result`
@@ -2109,6 +2110,16 @@ typedef enum {
     // #### `args`
     // - `int32_t` (button - promoted from `s16`)
     VB_SET_BUTTON_ITEM_FROM_C_BUTTON_SLOT,
+
+    // #### `result`
+    // ```c
+    // true
+    // ```
+    // #### `args`
+    // - `int32_t` (item ID)
+    // - `*u8` (pointer to button status)
+    // - `*s16` (pointer to flag)
+    VB_DISABLE_ROCS_FEATHER_WHILE_SWIMMING,
 
     // #### `result`
     // ```c

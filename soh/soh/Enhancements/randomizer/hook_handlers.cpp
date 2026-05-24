@@ -1508,6 +1508,24 @@ void RandomizerOnVanillaBehaviorHandler(GIVanillaBehavior id, bool* should, va_l
             }
             break;
         }
+        case VB_DISABLE_ROCS_FEATHER_WHILE_SWIMMING: {
+            s32 item = va_arg(args, s32);
+            u8* buttonStatus = va_arg(args, u8*);
+            s16* statusChanged = va_arg(args, s16*);
+            if (RAND_GET_OPTION(RSK_ROCS_FEATHER) && item == ITEM_ROCS_FEATHER &&
+                CVarGetInteger(CVAR_ENHANCEMENT("RocsFeatherWaterJump"), 0)) {
+                Player* player = GET_PLAYER(gPlayState);
+                if (!(player->stateFlags2 & PLAYER_STATE2_UNDERWATER) &&
+                    !(player->stateFlags2 & PLAYER_STATE2_DIVING)) {
+                    *should = false;
+                    if (*buttonStatus == BTN_DISABLED) {
+                        *statusChanged = 1;
+                    }
+                    *buttonStatus = BTN_ENABLED;
+                }
+            }
+            break;
+        }
         case VB_SPAWN_LW_FADO: {
             if (!RAND_GET_OPTION(RSK_SHUFFLE_ADULT_TRADE)) {
                 break;
@@ -2617,7 +2635,16 @@ void RandomizerOnPlayerUpdateHandler() {
                 gSaveContext.respawn[RESPAWN_MODE_DOWN].yaw = respawn->second.yaw;
             }
 
-            Play_TriggerVoidOut(gPlayState);
+            if (gPlayState->sceneNum == SCENE_GROTTOS) {
+                // RESPAWN_MODE_DOWN isn't refreshed on grotto entry, reload grotto instead
+                gPlayState->nextEntranceIndex = gSaveContext.entranceIndex;
+                gPlayState->transitionTrigger = TRANS_TRIGGER_START;
+                gPlayState->transitionType = TRANS_TYPE_FADE_BLACK;
+                gSaveContext.nextTransitionType = TRANS_TYPE_FADE_BLACK;
+                gSaveContext.respawnFlag = 0;
+            } else {
+                Play_TriggerVoidOut(gPlayState);
+            }
         }
     }
 
@@ -2630,8 +2657,14 @@ void RandomizerOnPlayerUpdateHandler() {
     }
 
     if (!GameInteractor::IsGameplayPaused() && RAND_GET_OPTION(RSK_TRIFORCE_HUNT).IsNot(RO_TRIFORCE_HUNT_OFF)) {
-        // Warp to credits
-        if (GameInteractor::State::TriforceHuntCreditsWarpActive) {
+        // Warp to credits once item queue has drained to avoid losing queued items
+        if (GameInteractor::State::TriforceHuntCreditsWarpActive && randomizerQueuedChecks.empty() &&
+            randomizerQueuedCheck == RC_UNKNOWN_CHECK) {
+            gSaveContext.ship.stats.itemTimestamp[TIMESTAMP_TRIFORCE_COMPLETED] =
+                static_cast<u32>(GAMEPLAYSTAT_TOTAL_TIME);
+            gSaveContext.ship.stats.gameComplete = 1;
+            Play_PerformSave(gPlayState);
+            Notification::Emit({ .message = "Game autosaved" });
             gPlayState->nextEntranceIndex = ENTR_CHAMBER_OF_THE_SAGES_0;
             gSaveContext.nextCutsceneIndex = 0xFFF2;
             gPlayState->transitionTrigger = TRANS_TRIGGER_START;

@@ -980,6 +980,13 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_ENHANCEMENT("RebottleBlueFire"))
         .Options(CheckboxOptions().Tooltip("Blue Fire dropped from bottle can be bottled."));
 
+    AddWidget(path, "Roc's Feather", WIDGET_SEPARATOR_TEXT);
+    AddWidget(path, "Jump Out of Water with Roc's Feather", WIDGET_CVAR_CHECKBOX)
+        .CVar(CVAR_ENHANCEMENT("RocsFeatherWaterJump"))
+        .Options(CheckboxOptions().Tooltip(
+            "While swimming on the water surface, pressing the button mapped to Roc's Feather will perform a jump. "
+            "Has no effect while underwater or diving."));
+
     // Fixes
     path.sidebarName = "Fixes";
     AddSidebarEntry("Enhancements", path.sidebarName, 3);

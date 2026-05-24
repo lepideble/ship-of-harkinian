@@ -1963,7 +1963,14 @@ void DrawSillyTab() {
                                    .Step(10.0f)
                                    .Size(ImVec2(300.0f, 0.0f))
                                    .Color(THEME_COLOR));
+    ImGui::SameLine();
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::CalcTextSize("g").y * 2);
     Reset_Option_Single("Reset##BunnyHood_EarLength", CVAR_COSMETIC("BunnyHood.EarLength"));
+
+    UIWidgets::CVarCheckbox("Growing Ears", CVAR_COSMETIC("BunnyHood.GrowingEars"),
+        UIWidgets::CheckboxOptions()
+        .Tooltip("Ears grow continuously while worn.  Resets on scene change.")
+        .Color(THEME_COLOR));
 
     UIWidgets::Separator(true, true, 2.0f, 2.0f);
 
@@ -1981,7 +1988,14 @@ void DrawSillyTab() {
     UIWidgets::Separator(true, true, 2.0f, 2.0f);
 
     SohGui::mSohMenu->MenuDrawItem(goronNeck, ImGui::GetContentRegionAvail().x, THEME_COLOR);
+    ImGui::SameLine();
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::CalcTextSize("g").y * 2);
     Reset_Option_Single("Reset##Goron_NeckLength", CVAR_COSMETIC("Goron.NeckLength"));
+
+    UIWidgets::CVarCheckbox("Growing Neck", CVAR_COSMETIC("Goron.GrowingNeck"),
+        UIWidgets::CheckboxOptions()
+        .Tooltip("Goron necks grow continuously.  Resets on scene change.")
+        .Color(THEME_COLOR));
 
     UIWidgets::Separator(true, true, 2.0f, 2.0f);
 
@@ -2708,6 +2722,7 @@ void RegisterCosmeticHooks() {
               [](s16 sceneNum) { CosmeticsEditor_AutoRandomizeAll(); });
 
     COND_HOOK(OnGameFrameUpdate, true, CosmeticsUpdateTick);
+    COND_HOOK(OnAssetAltChange, true, []() { ApplyOrResetCustomGfxPatches(true); });
 }
 
 void RegisterCosmeticWidgets() {

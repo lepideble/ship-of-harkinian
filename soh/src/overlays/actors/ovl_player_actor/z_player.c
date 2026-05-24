@@ -7340,8 +7340,9 @@ s32 Player_ActionHandler_2(Player* this, PlayState* play) {
                 // getting bombchus need to show the cutscene) and whenever the player doesn't have the item yet. In
                 // rando, we're overruling this because we need to keep showing the cutscene because those items can be
                 // randomized and thus it's important to keep showing the cutscene.
-                uint8_t showItemCutscene = play->sceneNum == SCENE_BOMBCHU_BOWLING_ALLEY ||
-                                           Item_CheckObtainability(giEntry.itemId) == ITEM_NONE || IS_RANDO;
+                uint8_t showItemCutscene = play->sceneNum == SCENE_BOMBCHU_BOWLING_ALLEY || IS_RANDO ||
+                                           giEntry.modIndex == MOD_RANDOMIZER ||
+                                           Item_CheckObtainability(giEntry.itemId) == ITEM_NONE;
 
                 // Only skip cutscenes for drops when they're items/consumables from bushes/rocks/enemies.
                 uint8_t isDropToSkip =
@@ -7360,8 +7361,8 @@ s32 Player_ActionHandler_2(Player* this, PlayState* play) {
                 // the player already has because those items could be a randomized item coming from scrubs,
                 // freestanding PoH's and keys. So we need to once again overrule this specifically for items coming
                 // from bushes/rocks/enemies when the player has already picked that item up.
-                uint8_t skipItemCutsceneRando =
-                    IS_RANDO && Item_CheckObtainability(giEntry.itemId) != ITEM_NONE && isDropToSkip;
+                uint8_t skipItemCutsceneRando = IS_RANDO && giEntry.modIndex == MOD_NONE &&
+                                                Item_CheckObtainability(giEntry.itemId) != ITEM_NONE && isDropToSkip;
 
                 // Show cutscene when picking up a item.
                 if (showItemCutscene && !skipItemCutscene && !skipItemCutsceneRando) {
@@ -12436,17 +12437,46 @@ void Player_DrawGameplay(PlayState* play, Player* this, s32 lod, Gfx* cullDList,
             earRot.x = sBunnyEarKinematics.rot.y + 0x3E2;
             earRot.y = sBunnyEarKinematics.rot.z + 0xDBE;
             earRot.z = sBunnyEarKinematics.rot.x - 0x348A;
-            Matrix_SetTranslateRotateYXZ(97.0f, -1203.0f - CVarGetFloat(CVAR_COSMETIC("BunnyHood.EarLength"), 0.0f),
-                                         -240.0f - CVarGetFloat(CVAR_COSMETIC("BunnyHood.EarSpread"), 0.0f), &earRot);
-            MATRIX_TOMTX(bunnyEarMtx++);
 
-            // Left ear
-            earRot.x = sBunnyEarKinematics.rot.y - 0x3E2;
-            earRot.y = -0xDBE - sBunnyEarKinematics.rot.z;
-            earRot.z = sBunnyEarKinematics.rot.x - 0x348A;
-            Matrix_SetTranslateRotateYXZ(97.0f, -1203.0f - CVarGetFloat(CVAR_COSMETIC("BunnyHood.EarLength"), 0.0f),
-                                         240.0f + CVarGetFloat(CVAR_COSMETIC("BunnyHood.EarSpread"), 0.0f), &earRot);
-            MATRIX_TOMTX(bunnyEarMtx);
+            // #region SOH [Enhancement] - Bunny Hood Length
+            {
+                static f32 growEarLength = 0.0f;
+                static f32 growEarSpread = 0.0f;
+                static s16 lastScene = -1;
+
+                if (CVarGetInteger(CVAR_COSMETIC("BunnyHood.GrowingEars"), 0)) {
+                    if (play->sceneNum != lastScene) {
+                        growEarLength = 0.0f;
+                        growEarSpread = 0.0f;
+                        lastScene = play->sceneNum;
+                    }
+
+                    growEarLength += 2.0f;
+                    growEarSpread += 0.5f;
+                } else {
+                    growEarLength = 0.0f;
+                    growEarSpread = 0.0f;
+                    lastScene = play->sceneNum;
+                }
+
+                const f32 earLength = CVarGetFloat(CVAR_COSMETIC("BunnyHood.EarLength"), 0.0f) + growEarLength;
+                // #endregion
+
+                // #region SOH [Enhancement] - Bunny Hood Spread
+                const f32 earSpread = CVarGetFloat(CVAR_COSMETIC("BunnyHood.EarSpread"), 0.0f) + growEarSpread;
+                Matrix_SetTranslateRotateYXZ(97.0f, -1203.0f - earLength, -240.0f - earSpread, &earRot);
+                // #endregion
+                MATRIX_TOMTX(bunnyEarMtx++);
+
+                // Left ear
+                earRot.x = sBunnyEarKinematics.rot.y - 0x3E2;
+                earRot.y = -0xDBE - sBunnyEarKinematics.rot.z;
+                earRot.z = sBunnyEarKinematics.rot.x - 0x348A;
+                // #region SOH [Enhancement] - Bunny Hood Spread
+                Matrix_SetTranslateRotateYXZ(97.0f, -1203.0f - earLength, 240.0f + earSpread, &earRot);
+                // #endregion
+                MATRIX_TOMTX(bunnyEarMtx);
+            }
         }
 
         if (this->currentMask != PLAYER_MASK_BUNNY || !CVarGetInteger(CVAR_ENHANCEMENT("HideBunnyHood"), 0)) {
